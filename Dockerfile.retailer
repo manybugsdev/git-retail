@@ -1,0 +1,9 @@
+FROM alpine:3.21
+RUN apk add --no-cache openssh git netcat-openbsd && \
+    adduser -D -s /bin/sh git && \
+    mkdir -p /home/git/repos && \
+    ssh-keygen -A
+COPY docker-entrypoint-retailer.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+EXPOSE 22
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

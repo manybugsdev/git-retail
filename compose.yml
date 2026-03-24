@@ -1,0 +1,45 @@
+services:
+  # Generates an ed25519 key pair into the ssh-keys volume on first run.
+  ssh-init:
+    image: alpine:3.21
+    command: >
+      sh -c "apk add --no-cache openssh-client &&
+             if [ ! -f /ssh-keys/id_ed25519 ]; then
+               ssh-keygen -t ed25519 -f /ssh-keys/id_ed25519 -N '' &&
+               cp /ssh-keys/id_ed25519.pub /ssh-keys/authorized_keys;
+             fi"
+    volumes:
+      - ssh-keys:/ssh-keys
+
+  # Bare-repository SSH server. Repositories are stored in the named volume "repos".
+  git-retailer:
+    build:
+      context: .
+      dockerfile: Dockerfile.retailer
+    volumes:
+      - repos:/home/git/repos
+      - ssh-keys:/ssh-keys:ro
+    depends_on:
+      ssh-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "22"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # git-retail web UI. Accessible at http://localhost:7411.
+  retail:
+    build: .
+    ports:
+      - "7411:7411"
+    volumes:
+      - ssh-keys:/ssh-keys:ro
+    depends_on:
+      git-retailer:
+        condition: service_healthy
+
+volumes:
+  repos:
+  ssh-keys:

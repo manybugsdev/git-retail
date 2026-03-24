@@ -127,7 +127,7 @@ pub fn build_router() -> Router {
 /// Starts the web server on port 7411.
 pub async fn start() {
     let app = build_router();
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:7411")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:7411")
         .await
         .expect("Failed to bind port 7411");
 
